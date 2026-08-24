@@ -1,0 +1,29 @@
+{
+    "name": "hotel-raghav-backend",
+    "version": "1.0.0",
+    "description": "Hotel RAGHAV Backend API for Vercel",
+    "type": "module",
+    "main": "api/index.js",
+    "scripts": {
+        "dev": "node api/index.js",
+        "start": "node api/index.js"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "express-session": "^1.17.3",
+        "jsonwebtoken": "^9.0.0",
+        "mongoose": "^7.5.0",
+        "nodemailer": "^6.9.5",
+        "passport": "^0.6.0",
+        "passport-google-oauth20": "^2.0.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "devDependencies": {
+        "vercel": "^59.5.0"
+    }
+}
