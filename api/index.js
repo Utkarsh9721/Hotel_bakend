@@ -1,3 +1,4 @@
+// backend/api/index.js
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -55,22 +56,45 @@ app.use('/api/contact', contactRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
+    const mongoStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
     res.json({
         status: 'OK',
         message: 'Backend API is running on Vercel',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        mongodb: mongoStatus,
+        env: process.env.NODE_ENV || 'development'
     });
 });
 
-// MongoDB connection (cached for serverless)
+// ✅ FIXED: MongoDB connection for serverless
 let cachedDb = null;
 
 const connectDB = async () => {
-    if (cachedDb) return cachedDb;
+    if (cachedDb) {
+        console.log('✅ Using cached MongoDB connection');
+        return cachedDb;
+    }
+
     try {
-        const db = await mongoose.connect(process.env.MONGO_URI);
+        const uri = process.env.MONGO_URI;
+        if (!uri) {
+            throw new Error('MONGO_URI is not defined');
+        }
+
+        console.log('🔗 Connecting to MongoDB...');
+
+        // ✅ Use these options for serverless
+        const options = {
+            serverSelectionTimeoutMS: 30000, // 30 seconds
+            socketTimeoutMS: 45000, // 45 seconds
+            family: 4, // Use IPv4
+            maxPoolSize: 1,
+            minPoolSize: 1
+        };
+
+        const db = await mongoose.connect(uri, options);
         cachedDb = db;
-        console.log('✅ MongoDB connected');
+        console.log('✅ MongoDB connected successfully');
         return db;
     } catch (error) {
         console.error('❌ MongoDB connection error:', error.message);
@@ -78,16 +102,17 @@ const connectDB = async () => {
     }
 };
 
-// Connect to DB before each request
+// Connect to DB for each request (with caching)
 app.use(async (req, res, next) => {
     try {
         await connectDB();
         next();
     } catch (error) {
-        console.error('DB error:', error);
+        console.error('❌ DB connection error:', error.message);
         res.status(500).json({
             success: false,
-            message: 'Database connection failed'
+            message: 'Database connection failed',
+            error: error.message
         });
     }
 });
@@ -109,4 +134,16 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Root route for testing
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Hotel RAGHAV Backend API',
+        status: 'Running',
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth',
+            bookings: '/api/bookings'
+        }
+    });
+});
 export default app;
